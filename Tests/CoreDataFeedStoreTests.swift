@@ -19,6 +19,20 @@ class CoreDataFeedStoreTests: XCTestCase, FeedStoreSpecs {
 		undoStoreSideEffects()
 	}
 	
+	func test_init_throwsErrorWhenManagedObjectModelCannotBeCreated() {
+		do {
+			let _ = try CoreDataFeedStore(storeURL: testSpecificStoreURL(), modelName: "WrongModelName")
+		} catch {
+			XCTAssertEqual(
+				error as NSError,
+				CoreDataFeedStore.CoreDataFeedStoreError.cannotCreateManagedObjectModel(
+					name: "WrongModelName",
+					bundle: Bundle(for: CoreDataFeedStore.self)
+				) as NSError
+			)
+		}
+	}
+	
 	func test_retrieve_deliversEmptyOnEmptyCache() {
 		let sut = makeSUT()
 
@@ -94,7 +108,7 @@ class CoreDataFeedStoreTests: XCTestCase, FeedStoreSpecs {
 	// - MARK: Helpers
 	
 	private func makeSUT(storeURL: URL? = nil) -> FeedStore {
-		let sut = CoreDataFeedStore(storeURL: storeURL ?? testSpecificStoreURL())
+		let sut = try! CoreDataFeedStore(storeURL: storeURL ?? testSpecificStoreURL())
 		trackForMemoryLeaks(sut)
 		return sut
 	}

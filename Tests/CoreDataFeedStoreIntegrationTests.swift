@@ -65,7 +65,7 @@ class CoreDataFeedStoreIntegrationTests: XCTestCase {
 	// - MARK: Helpers
 	
 	private func makeSUT() -> FeedStore {
-		return CoreDataFeedStore(storeURL: testSpecificStoreURL())
+		return try! CoreDataFeedStore(storeURL: testSpecificStoreURL())
 	}
 	
 	private func setupEmptyStoreState() {
@@ -78,5 +78,5 @@ class CoreDataFeedStoreIntegrationTests: XCTestCase {
 
 	private func deleteStoreArtifacts() {
 		try? FileManager.default.removeItem(at: testSpecificStoreURL())
-	}	
+	}
 }

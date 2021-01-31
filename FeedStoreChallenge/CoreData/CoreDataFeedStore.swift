@@ -10,19 +10,26 @@ import CoreData
 
 public final class CoreDataFeedStore: FeedStore {
 	
-	// MARK: - Properties
+	// MARK: - Types
 	
-	private static let dataModelName = "FeedDataModel"
+	public enum CoreDataFeedStoreError: Error {
+		case cannotCreateManagedObjectModel(name: String, bundle: Bundle)
+	}
+	
+	// MARK: - Properties
 	
 	private let persistentContainer: NSPersistentContainer
 	private let managedContext: NSManagedObjectContext
 	
 	// MARK: - Init
 	
-	public init(storeURL: URL) {
-		
-		let model = NSManagedObjectModel(name: CoreDataFeedStore.dataModelName, in: Bundle(for: CoreDataFeedStore.self))
-		persistentContainer = NSPersistentContainer(dataModelName: CoreDataFeedStore.dataModelName, model: model, storeURL: storeURL)
+	public init(storeURL: URL, modelName: String? = nil) throws {
+		let bundle = Bundle(for: CoreDataFeedStore.self)
+		let dataModelName = modelName ?? "FeedDataModel"
+		guard let model = NSManagedObjectModel(name: dataModelName, in: bundle) else {
+			throw CoreDataFeedStoreError.cannotCreateManagedObjectModel(name: dataModelName, bundle: bundle)
+		}
+		persistentContainer = NSPersistentContainer(dataModelName: dataModelName, model: model, storeURL: storeURL)
 		managedContext = persistentContainer.newBackgroundContext()
 	}
 	
@@ -95,9 +102,11 @@ private extension NSPersistentContainer {
 }
 
 private extension NSManagedObjectModel {
-	convenience init(name: String, in bundle: Bundle) {
-		let modelURL = bundle.url(forResource: name, withExtension: "momd")!
-		self.init(contentsOf: modelURL)!
+	convenience init?(name: String, in bundle: Bundle) {
+		guard let modelURL = bundle.url(forResource: name, withExtension: "momd") else {
+			return nil
+		}
+		self.init(contentsOf: modelURL)
 	}
 }
 
