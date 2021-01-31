@@ -53,7 +53,7 @@
 		08CE2BB42285BEF100183A1B /* InMemoryFeedStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InMemoryFeedStoreTests.swift; sourceTree = "<group>"; };
 		431A8CD225C71CCD0022B617 /* CDFeedImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CDFeedImage.swift; sourceTree = "<group>"; };
 		431A8CD625C71CFF0022B617 /* CDFeed.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CDFeed.swift; sourceTree = "<group>"; };
-		431A8CDA25C71D5B0022B617 /* CoreDataFeedStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CoreDataFeedStore.swift; path = FeedStoreChallenge/CoreDataFeedStore.swift; sourceTree = SOURCE_ROOT; };
+		431A8CDA25C71D5B0022B617 /* CoreDataFeedStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CoreDataFeedStore.swift; path = FeedStoreChallenge/CoreData/CoreDataFeedStore.swift; sourceTree = SOURCE_ROOT; };
 		431A8CE725C723F70022B617 /* CoreDataFeedMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreDataFeedMapper.swift; sourceTree = "<group>"; };
 		80595B8F25C698F800C898E1 /* CoreDataFeedStoreIntegrationTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = CoreDataFeedStoreIntegrationTests.swift; path = Tests/CoreDataFeedStoreIntegrationTests.swift; sourceTree = SOURCE_ROOT; };
 		80595B9025C698F800C898E1 /* CoreDataFeedStoreTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = CoreDataFeedStoreTests.swift; path = Tests/CoreDataFeedStoreTests.swift; sourceTree = SOURCE_ROOT; };
@@ -103,7 +103,6 @@
 			isa = PBXGroup;
 			children = (
 				431A8CD125C71CBE0022B617 /* CoreData */,
-				431A8CDA25C71D5B0022B617 /* CoreDataFeedStore.swift */,
 				08CE2BA72285BCC600183A1B /* LocalFeedImage.swift */,
 				08CE2BA52285BCB600183A1B /* FeedStore.swift */,
 				08CE2B8F2285BBD100183A1B /* Info.plist */,
@@ -143,6 +142,7 @@
 				431A8CD625C71CFF0022B617 /* CDFeed.swift */,
 				431A8CD225C71CCD0022B617 /* CDFeedImage.swift */,
 				431A8CE725C723F70022B617 /* CoreDataFeedMapper.swift */,
+				431A8CDA25C71D5B0022B617 /* CoreDataFeedStore.swift */,
 				80595BA325C69B0F00C898E1 /* FeedDataModel.xcdatamodeld */,
 			);
 			path = CoreData;
