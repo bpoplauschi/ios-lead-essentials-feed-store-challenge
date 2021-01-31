@@ -29,6 +29,10 @@ class FeedStore {
 LocalFeedImage <-- FeedStore : uses
 RetrieveCachedFeedResult <-- FeedStore : uses
 FeedStore <|.. InMemoryFeedStore : implements
+FeedStore <|.. CoreDataFeedStore : implements
+CoreDataFeedMapper <.. CoreDataFeedStore : uses
+CDFeed <.. CoreDataFeedStore : uses
+CDFeedImage "0..*" --o "1" CDFeed
 
 ```
 
