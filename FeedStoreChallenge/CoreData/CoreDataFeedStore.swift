@@ -72,9 +72,7 @@ public final class CoreDataFeedStore: FeedStore {
 					completion(.empty)
 					return
 				}
-				
 				let (feed, timestamp) = CoreDataFeedMapper.mapToFeed(cachedFeed)
-				
 				completion(.found(feed: feed, timestamp: timestamp))
 			} catch {
 				completion(.failure(error))
