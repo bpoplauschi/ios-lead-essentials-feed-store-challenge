@@ -102,11 +102,11 @@
 		08CE2B8D2285BBD100183A1B /* FeedStoreChallenge */ = {
 			isa = PBXGroup;
 			children = (
+				431A8CED25C724DB0022B617 /* InMemory */,
 				431A8CD125C71CBE0022B617 /* CoreData */,
 				08CE2BA72285BCC600183A1B /* LocalFeedImage.swift */,
 				08CE2BA52285BCB600183A1B /* FeedStore.swift */,
 				08CE2B8F2285BBD100183A1B /* Info.plist */,
-				806C534325C6940600B49579 /* InMemoryFeedStore.swift */,
 			);
 			path = FeedStoreChallenge;
 			sourceTree = "<group>";
@@ -146,6 +146,14 @@
 				80595BA325C69B0F00C898E1 /* FeedDataModel.xcdatamodeld */,
 			);
 			path = CoreData;
+			sourceTree = "<group>";
+		};
+		431A8CED25C724DB0022B617 /* InMemory */ = {
+			isa = PBXGroup;
+			children = (
+				806C534325C6940600B49579 /* InMemoryFeedStore.swift */,
+			);
+			path = InMemory;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
