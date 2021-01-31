@@ -5,7 +5,7 @@
 import XCTest
 import FeedStoreChallenge
 
-class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
+class InMemoryFeedStoreTests: XCTestCase, FeedStoreSpecs {
 	
 	func test_retrieve_deliversEmptyOnEmptyCache() {
 		let sut = makeSUT()
