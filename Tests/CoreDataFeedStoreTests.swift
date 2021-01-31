@@ -44,6 +44,19 @@ extension CDFeed {
 	}
 }
 
+extension LocalFeedImage {
+	init?(from cacheFeedImage: CDFeedImage?) {
+		guard let cacheFeedImage = cacheFeedImage else { return nil }
+		
+		self.init(
+			id: cacheFeedImage.id,
+			description: cacheFeedImage.imageDescription,
+			location: cacheFeedImage.imageLocation,
+			url: cacheFeedImage.url
+		)
+	}
+}
+
 class CoreDataFeedStore: FeedStore {
 	
 	private let persistentContainer: NSPersistentContainer
@@ -80,9 +93,12 @@ class CoreDataFeedStore: FeedStore {
 				return
 			}
 			
-			completion(.found(feed: cachedFeed.feed.compactMap({ $0 as? CDFeedImage }).map {
-				return LocalFeedImage(id: $0.id, description: $0.imageDescription, location: $0.imageLocation, url: $0.url)
-			}, timestamp: cachedFeed.timestamp))
+			completion(
+				.found(
+					feed: cachedFeed.feed.compactMap({ LocalFeedImage(from: $0 as? CDFeedImage) }),
+					timestamp: cachedFeed.timestamp
+				)
+			)
 		}
 	}
 }
