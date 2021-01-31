@@ -32,9 +32,12 @@ public final class CoreDataFeedStore: FeedStore {
 		let context = self.managedContext
 		
 		context.perform {
-			self.deleteCache()
-			
-			completion(nil)
+			do {
+				try self.deleteCache()
+				completion(nil)
+			} catch {
+				completion(error)
+			}
 		}
 	}
 	
@@ -42,13 +45,14 @@ public final class CoreDataFeedStore: FeedStore {
 		let context = self.managedContext
 		
 		context.perform {
-			self.deleteCache()
-			
-			let _ = CoreDataFeedMapper.mapToStorableFeed(feed: feed, timestamp: timestamp, in: context)
-			
-			try! context.save()
-			
-			completion(nil)
+			do {
+				try self.deleteCache()
+				let _ = CoreDataFeedMapper.mapToStorableFeed(feed: feed, timestamp: timestamp, in: context)
+				try context.save()
+				completion(nil)
+			} catch {
+				completion(error)
+			}
 		}
 	}
 	
@@ -56,23 +60,27 @@ public final class CoreDataFeedStore: FeedStore {
 		let context = self.managedContext
 		
 		context.perform {
-			guard let cachedFeed = try! context.fetch(CDFeed.fetchRequest()).first as? CDFeed else {
-				completion(.empty)
-				return
+			do {
+				guard let cachedFeed = try context.fetch(CDFeed.fetchRequest()).first as? CDFeed else {
+					completion(.empty)
+					return
+				}
+				
+				let (feed, timestamp) = CoreDataFeedMapper.mapToFeed(cachedFeed)
+				
+				completion(.found(feed: feed, timestamp: timestamp))
+			} catch {
+				completion(.failure(error))
 			}
-			
-			let (feed, timestamp) = CoreDataFeedMapper.mapToFeed(cachedFeed)
-			
-			completion(.found(feed: feed, timestamp: timestamp))
 		}
 	}
 	
 	// MARK: - Helpers
 	
-	private func deleteCache() {
-		if let feedCache = try! managedContext.fetch(CDFeed.fetchRequest()).first as? CDFeed {
+	private func deleteCache() throws {
+		if let feedCache = try managedContext.fetch(CDFeed.fetchRequest()).first as? CDFeed {
 			managedContext.delete(feedCache)
-			try! managedContext.save()
+			try managedContext.save()
 		}
 	}
 }
