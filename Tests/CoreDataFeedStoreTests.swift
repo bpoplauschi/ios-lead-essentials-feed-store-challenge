@@ -38,8 +38,7 @@ class CoreDataFeedStore: FeedStore {
 	private let devNullURL = URL(fileURLWithPath: "/dev/null")
 	
 	init() {
-		let modelURL = Bundle(for: CoreDataFeedStore.self).url(forResource: dataModelName, withExtension: "momd")!
-		let model = NSManagedObjectModel(contentsOf: modelURL)!
+		let model = NSManagedObjectModel(name: dataModelName, in: Bundle(for: CoreDataFeedStore.self))
 		persistentContainer = NSPersistentContainer(dataModelName: dataModelName, model: model, storeURL: devNullURL)
 		managedContext = persistentContainer.viewContext
 	}
@@ -84,6 +83,13 @@ private extension NSPersistentContainer {
 		self.init(name: dataModelName, managedObjectModel: model)
 		persistentStoreDescriptions = [description]
 		loadPersistentStores { _, _ in }
+	}
+}
+
+private extension NSManagedObjectModel {
+	convenience init(name: String, in bundle: Bundle) {
+		let modelURL = bundle.url(forResource: name, withExtension: "momd")!
+		self.init(contentsOf: modelURL)!
 	}
 }
 
