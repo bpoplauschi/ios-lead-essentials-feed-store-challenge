@@ -53,3 +53,50 @@ Happy coding!
 ## Class Diagram
 
 ![](classDiagram.png)
+
+## Mocking CoreData PersistentStore
+
+I spent some hours trying to mock the CoreData PersistentStore by creating a `NSIncrementalStore` subclass. Unfortunately, this is flaky is and reliable, as even if the docs state this is an abstract class, it has behavior we can't override.
+
+```swift
+class MockPersistentStore: NSIncrementalStore {
+	
+	static let storeType: String = "Tests.MockPersistentStore"
+	
+	static var mockRetrieveError: Error?
+	static var mockInsertError: Error?
+		
+	override func loadMetadata() throws {
+	}
+	
+	override class func metadataForPersistentStore(with url: URL) throws -> [String : Any] {
+		return [NSStoreTypeKey: MockPersistentStore.storeType, NSStoreUUIDKey: ""]
+	}
+					
+	override func execute(_ request: NSPersistentStoreRequest, with context: NSManagedObjectContext?) throws -> Any {
+		switch (request, MockPersistentStore.mockRetrieveError, MockPersistentStore.mockInsertError) {
+		case let (_ as NSFetchRequest<NSFetchRequestResult>, .some(retrievalError), _):
+			throw retrievalError
+		case let (_ as NSSaveChangesRequest, _, .some(insertionError)):
+			throw insertionError
+		default: break
+		}
+				
+		return []
+	}
+	
+	override func obtainPermanentIDs(for array: [NSManagedObject]) throws -> [NSManagedObjectID] {
+		guard let firstID = array.first?.objectID else { return [] }
+		return array.map { _ in firstID }
+	}
+}
+
+...
+
+NSPersistentStoreCoordinator.registerStoreClass(MockPersistentStore.self, forStoreType: MockPersistentStore.storeType)
+try? addPersistentStore(ofType: MockPersistentStore.storeType, configurationName: nil, at: storeURL, options: nil)
+```
+
+Details here (not many references to this approach): https://stackoverflow.com/questions/9382151/core-data-unit-testing-unsure-how-to-trigger-error-case-in-executefetchrequest
+
+
