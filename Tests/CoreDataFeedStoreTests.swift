@@ -38,6 +38,12 @@ extension CDFeed {
 	}
 }
 
+extension CDFeed {
+	var fetchRequest: NSFetchRequest<CDFeed> {
+		NSFetchRequest<CDFeed>(entityName: CDFeed.entity().name!)
+	}
+}
+
 class CoreDataFeedStore: FeedStore {
 	
 	private let persistentContainer: NSPersistentContainer
@@ -69,9 +75,7 @@ class CoreDataFeedStore: FeedStore {
 		let context = self.managedContext
 		
 		context.perform {
-			let fetchRequest = NSFetchRequest<CDFeed>(entityName: CDFeed.entity().name!)
-			
-			guard let cachedFeed = try! context.fetch(fetchRequest).first else {
+			guard let cachedFeed = try! context.fetch(CDFeed.fetchRequest()).first as? CDFeed else {
 				completion(.empty)
 				return
 			}
