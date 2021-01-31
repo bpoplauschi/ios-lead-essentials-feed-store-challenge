@@ -16,11 +16,13 @@ class InMemoryFeedStore: FeedStore {
 	
 	func deleteCachedFeed(completion: @escaping DeletionCompletion) {
 		cache = nil
+		
 		completion(nil)
 	}
 	
 	func insert(_ feed: [LocalFeedImage], timestamp: Date, completion: @escaping InsertionCompletion) {
 		cache = Cache(feed: feed, timestamp: timestamp)
+		
 		completion(nil)
 	}
 	
