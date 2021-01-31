@@ -77,6 +77,8 @@ class CoreDataFeedStore: FeedStore {
 		let context = self.managedContext
 		
 		context.perform {
+			self.deleteCache()
+			
 			let _ = CDFeed(context: context).populate(from: feed, timestamp: timestamp, in: context)
 			
 			try! context.save()
@@ -99,6 +101,13 @@ class CoreDataFeedStore: FeedStore {
 					timestamp: cachedFeed.timestamp
 				)
 			)
+		}
+	}
+	
+	private func deleteCache() {
+		if let feedCache = try! managedContext.fetch(CDFeed.fetchRequest()).first as? CDFeed {
+			managedContext.delete(feedCache)
+			try! managedContext.save()
 		}
 	}
 }
@@ -158,9 +167,9 @@ class CoreDataFeedStoreTests: XCTestCase, FeedStoreSpecs {
 	}
 	
 	func test_insert_overridesPreviouslyInsertedCacheValues() {
-		//		let sut = makeSUT()
-		//
-		//		assertThatInsertOverridesPreviouslyInsertedCacheValues(on: sut)
+		let sut = makeSUT()
+
+		assertThatInsertOverridesPreviouslyInsertedCacheValues(on: sut)
 	}
 	
 	func test_delete_deliversNoErrorOnEmptyCache() {
