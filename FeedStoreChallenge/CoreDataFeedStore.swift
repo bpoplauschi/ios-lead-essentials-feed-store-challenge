@@ -91,39 +91,3 @@ private extension CDFeed {
 		NSFetchRequest<CDFeed>(entityName: CDFeed.entity().name!)
 	}
 }
-
-private class CoreDataFeedMapper {
-	static func mapToStorableFeed(feed: [LocalFeedImage], timestamp: Date, in context: NSManagedObjectContext) -> CDFeed {
-		let result = CDFeed(context: context)
-		result.feed = NSOrderedSet(array: feed.map { mapToStorableFeedImage($0, in: context) })
-		result.timestamp = timestamp
-		
-		return result
-	}
-	
-	private static func mapToStorableFeedImage(_ feedImage: LocalFeedImage, in context: NSManagedObjectContext) -> CDFeedImage {
-		let result = CDFeedImage(context: context)
-		result.id = feedImage.id
-		result.imageDescription = feedImage.description
-		result.imageLocation = feedImage.location
-		result.url = feedImage.url
-		
-		return result
-	}
-	
-	static func mapToFeed(_ cacheFeed: CDFeed) -> (feed: [LocalFeedImage], timestamp: Date) {
-		let feed = cacheFeed.feed.compactMap({ mapToFeedImage($0 as? CDFeedImage) })
-		return (feed, cacheFeed.timestamp)
-	}
-	
-	private static func mapToFeedImage(_ cacheFeedImage: CDFeedImage?) -> LocalFeedImage? {
-		guard let cacheFeedImage = cacheFeedImage else { return nil }
-		
-		return LocalFeedImage(
-			id: cacheFeedImage.id,
-			description: cacheFeedImage.imageDescription,
-			location: cacheFeedImage.imageLocation,
-			url: cacheFeedImage.url
-		)
-	}
-}
