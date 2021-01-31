@@ -75,8 +75,7 @@ class CoreDataFeedStore: FeedStore {
 		let context = self.managedContext
 		
 		context.perform {
-			self.deleteCache()
-			
+			try? self.deleteCache()
 			completion(nil)
 		}
 	}
@@ -85,13 +84,17 @@ class CoreDataFeedStore: FeedStore {
 		let context = self.managedContext
 		
 		context.perform {
-			self.deleteCache()
+			do {
+				try self.deleteCache()
 			
-			let _ = CDFeed(context: context).populate(from: feed, timestamp: timestamp, in: context)
+				let _ = CDFeed(context: context).populate(from: feed, timestamp: timestamp, in: context)
 			
-			try! context.save()
+				try context.save()
 			
-			completion(nil)
+				completion(nil)
+			} catch {
+				completion(error)
+			}
 		}
 	}
 	
@@ -117,10 +120,10 @@ class CoreDataFeedStore: FeedStore {
 		}
 	}
 	
-	private func deleteCache() {
-		if let feedCache = try! managedContext.fetch(CDFeed.fetchRequest()).first as? CDFeed {
+	private func deleteCache() throws {
+		if let feedCache = try managedContext.fetch(CDFeed.fetchRequest()).first as? CDFeed {
 			managedContext.delete(feedCache)
-			try! managedContext.save()
+			try managedContext.save()
 		}
 	}
 }
@@ -297,21 +300,22 @@ class MockPersistentStore: NSIncrementalStore {
 	}
 }
 
-//extension FeedStoreChallengeTests: FailableInsertFeedStoreSpecs {
+extension CoreDataFeedStoreTests: FailableInsertFeedStoreSpecs {
+
+	func test_insert_deliversErrorOnInsertionError() {
+		MockPersistentStore.mockExecuteError = anyNSError()
+		let sut = makeSUT(persistentStore: (MockPersistentStore.self, MockPersistentStore.storeType))
+
+		assertThatInsertDeliversErrorOnInsertionError(on: sut)
+	}
+
+	func test_insert_hasNoSideEffectsOnInsertionError() {
+//		let sut = makeSUT()
 //
-//	func test_insert_deliversErrorOnInsertionError() {
-////		let sut = makeSUT()
-////
-////		assertThatInsertDeliversErrorOnInsertionError(on: sut)
-//	}
-//
-//	func test_insert_hasNoSideEffectsOnInsertionError() {
-////		let sut = makeSUT()
-////
-////		assertThatInsertHasNoSideEffectsOnInsertionError(on: sut)
-//	}
-//
-//}
+//		assertThatInsertHasNoSideEffectsOnInsertionError(on: sut)
+	}
+
+}
 
 //extension FeedStoreChallengeTests: FailableDeleteFeedStoreSpecs {
 //
