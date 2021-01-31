@@ -94,7 +94,9 @@ class CoreDataFeedStoreTests: XCTestCase, FeedStoreSpecs {
 	// - MARK: Helpers
 	
 	private func makeSUT(storeURL: URL? = nil) -> FeedStore {
-		return CoreDataFeedStore(storeURL: storeURL ?? testSpecificStoreURL())
+		let sut = CoreDataFeedStore(storeURL: storeURL ?? testSpecificStoreURL())
+		trackForMemoryLeaks(sut)
+		return sut
 	}
 	
 	private func setupEmptyStoreState() {
