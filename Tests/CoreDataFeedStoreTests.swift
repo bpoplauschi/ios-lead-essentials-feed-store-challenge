@@ -59,13 +59,15 @@ extension LocalFeedImage {
 
 class CoreDataFeedStore: FeedStore {
 	
+	typealias PersistentStore = (class: NSPersistentStore.Type, type: String)
+	
 	private let persistentContainer: NSPersistentContainer
 	private let managedContext: NSManagedObjectContext
 	private let dataModelName = "FeedDataModel"
 	
-	init(storeURL: URL, persistentStoreClass: NSPersistentStore.Type? = nil, persistentStoreType: String? = nil) {
+	init(storeURL: URL, persistentStore: PersistentStore? = nil) {
 		let model = NSManagedObjectModel(name: dataModelName, in: Bundle(for: CoreDataFeedStore.self))
-		persistentContainer = NSPersistentContainer(dataModelName: dataModelName, model: model, storeURL: storeURL, persistentStoreClass: persistentStoreClass, persistentStoreType: persistentStoreType)
+		persistentContainer = NSPersistentContainer(dataModelName: dataModelName, model: model, storeURL: storeURL, persistentStore: persistentStore)
 		managedContext = persistentContainer.newBackgroundContext()
 	}
 	
@@ -124,22 +126,30 @@ class CoreDataFeedStore: FeedStore {
 }
 
 private extension NSPersistentContainer {
-	convenience init(dataModelName: String, model: NSManagedObjectModel, storeURL: URL, persistentStoreClass: NSPersistentStore.Type? = nil, persistentStoreType: String? = nil) {
+	convenience init(dataModelName: String, model: NSManagedObjectModel, storeURL: URL, persistentStore: CoreDataFeedStore.PersistentStore?) {
 		
 		let description = NSPersistentStoreDescription(url: storeURL)
 		self.init(name: dataModelName, managedObjectModel: model)
 		persistentStoreDescriptions = [description]
 		
-		if let persistentStoreClass = persistentStoreClass, let persistentStoreType = persistentStoreType {
-			NSPersistentStoreCoordinator.registerStoreClass(persistentStoreClass, forStoreType: persistentStoreType)
-			do {
-				try persistentStoreCoordinator.addPersistentStore(ofType: persistentStoreType, configurationName: nil, at: storeURL, options: nil)
-			} catch {
-				print(error)
-			}
-		}
+		try? persistentStoreCoordinator.add(persistentStore: persistentStore, with: storeURL)
 		
 		loadPersistentStores { _, _ in }
+	}
+}
+
+private extension NSPersistentStoreCoordinator {
+	func add(persistentStore: CoreDataFeedStore.PersistentStore?, with storeURL: URL) throws {
+		guard let persistentStore = persistentStore else {
+			return
+		}
+		
+		NSPersistentStoreCoordinator.registerStoreClass(persistentStore.class, forStoreType: persistentStore.type)
+		do {
+			try addPersistentStore(ofType: persistentStore.type, configurationName: nil, at: storeURL, options: nil)
+		} catch {
+			throw error
+		}
 	}
 }
 
@@ -226,8 +236,8 @@ class CoreDataFeedStoreTests: XCTestCase, FeedStoreSpecs {
 	
 	// - MARK: Helpers
 	
-	private func makeSUT(storeURL: URL? = nil, persistentStoreClass: NSPersistentStore.Type? = nil, persistentStoreType: String? = nil) -> FeedStore {
-		return CoreDataFeedStore(storeURL: storeURL ?? URL(fileURLWithPath: "/dev/null"), persistentStoreClass: persistentStoreClass, persistentStoreType: persistentStoreType)
+	private func makeSUT(storeURL: URL? = nil, persistentStore: CoreDataFeedStore.PersistentStore? = nil) -> FeedStore {
+		return CoreDataFeedStore(storeURL: storeURL ?? URL(fileURLWithPath: "/dev/null"), persistentStore: persistentStore)
 	}
 		
 	private func cachesDirectory() -> URL {
@@ -239,7 +249,7 @@ extension CoreDataFeedStoreTests: FailableRetrieveFeedStoreSpecs {
 
 	func test_retrieve_deliversFailureOnRetrievalError() {
 		MockPersistentStore.mockExecuteError = anyNSError()
-		let sut = makeSUT(persistentStoreClass: MockPersistentStore.self, persistentStoreType: MockPersistentStore.storeType)
+		let sut = makeSUT(persistentStore: (MockPersistentStore.self, MockPersistentStore.storeType))
 
 		assertThatRetrieveDeliversFailureOnRetrievalError(on: sut)
 	}
