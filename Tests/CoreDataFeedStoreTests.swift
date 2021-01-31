@@ -255,10 +255,10 @@ extension CoreDataFeedStoreTests: FailableRetrieveFeedStoreSpecs {
 	}
 
 	func test_retrieve_hasNoSideEffectsOnFailure() {
-//		MockPersistentStore.mockExecuteError = anyNSError()
-//		let sut = makeSUT(persistentStoreClass: MockPersistentStore.self, persistentStoreType: MockPersistentStore.storeType)
-//
-//		assertThatRetrieveHasNoSideEffectsOnFailure(on: sut)
+		MockPersistentStore.mockExecuteError = anyNSError()
+		let sut = makeSUT(persistentStore: (MockPersistentStore.self, MockPersistentStore.storeType))
+
+		assertThatRetrieveHasNoSideEffectsOnFailure(on: sut)
 	}
 }
 
