@@ -30,6 +30,14 @@ class CDFeed: NSManagedObject {
 	@NSManaged var feed: NSOrderedSet
 }
 
+extension CDFeed {
+	func populate(from feed: [LocalFeedImage], timestamp: Date, in context: NSManagedObjectContext) -> CDFeed {
+		self.feed = NSOrderedSet(array: feed.map { CDFeedImage(context: context).populate(from: $0) })
+		self.timestamp = timestamp
+		return self
+	}
+}
+
 class CoreDataFeedStore: FeedStore {
 	
 	private let persistentContainer: NSPersistentContainer
@@ -50,9 +58,7 @@ class CoreDataFeedStore: FeedStore {
 		let context = self.managedContext
 		
 		context.perform {
-			let cachedFeed = CDFeed(context: context)
-			cachedFeed.feed = NSOrderedSet(array: feed.map { CDFeedImage(context: context).populate(from: $0) })
-			cachedFeed.timestamp = timestamp
+			let _ = CDFeed(context: context).populate(from: feed, timestamp: timestamp, in: context)
 			
 			try! context.save()
 			completion(nil)
