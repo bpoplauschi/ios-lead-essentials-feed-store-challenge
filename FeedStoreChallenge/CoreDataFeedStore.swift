@@ -10,11 +10,15 @@ import CoreData
 
 public final class CoreDataFeedStore: FeedStore {
 	
+	// MARK: - Properties
+	
 	private static let dataModelName = "FeedDataModel"
 	
 	private let persistentContainer: NSPersistentContainer
 	private let managedContext: NSManagedObjectContext
 	private let devNullURL = URL(fileURLWithPath: "/dev/null")
+	
+	// MARK: - Init
 	
 	public init() {
 		
@@ -22,6 +26,8 @@ public final class CoreDataFeedStore: FeedStore {
 		persistentContainer = NSPersistentContainer(dataModelName: CoreDataFeedStore.dataModelName, model: model, storeURL: devNullURL)
 		managedContext = persistentContainer.newBackgroundContext()
 	}
+	
+	// MARK: - FeedStore
 	
 	public func deleteCachedFeed(completion: @escaping DeletionCompletion) {
 		let context = self.managedContext
@@ -61,6 +67,8 @@ public final class CoreDataFeedStore: FeedStore {
 			completion(.found(feed: feed, timestamp: timestamp))
 		}
 	}
+	
+	// MARK: - Helpers
 	
 	private func deleteCache() {
 		if let feedCache = try! managedContext.fetch(CDFeed.fetchRequest()).first as? CDFeed {
