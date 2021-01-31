@@ -39,7 +39,7 @@ public final class CoreDataFeedStore: FeedStore {
 		context.perform {
 			self.deleteCache()
 			
-			let _ = CDFeed(context: context).populate(from: feed, timestamp: timestamp, in: context)
+			let _ = CoreDataFeedMapper.mapToStorableFeed(feed: feed, timestamp: timestamp, in: context)
 			
 			try! context.save()
 			
@@ -56,12 +56,9 @@ public final class CoreDataFeedStore: FeedStore {
 				return
 			}
 			
-			completion(
-				.found(
-					feed: cachedFeed.feed.compactMap({ LocalFeedImage(from: $0 as? CDFeedImage) }),
-					timestamp: cachedFeed.timestamp
-				)
-			)
+			let (feed, timestamp) = CoreDataFeedMapper.mapToFeed(cachedFeed)
+			
+			completion(.found(feed: feed, timestamp: timestamp))
 		}
 	}
 	
@@ -95,29 +92,34 @@ private extension CDFeed {
 	}
 }
 
-private extension CDFeed {
-	func populate(from feed: [LocalFeedImage], timestamp: Date, in context: NSManagedObjectContext) -> CDFeed {
-		self.feed = NSOrderedSet(array: feed.map { CDFeedImage(context: context).populate(from: $0) })
-		self.timestamp = timestamp
-		return self
+private class CoreDataFeedMapper {
+	static func mapToStorableFeed(feed: [LocalFeedImage], timestamp: Date, in context: NSManagedObjectContext) -> CDFeed {
+		let result = CDFeed(context: context)
+		result.feed = NSOrderedSet(array: feed.map { mapToStorableFeedImage($0, in: context) })
+		result.timestamp = timestamp
+		
+		return result
 	}
-}
-
-private extension CDFeedImage {
-	func populate(from feedImage: LocalFeedImage) -> CDFeedImage {
-		id = feedImage.id
-		imageDescription = feedImage.description
-		imageLocation = feedImage.location
-		url = feedImage.url
-		return self
+	
+	private static func mapToStorableFeedImage(_ feedImage: LocalFeedImage, in context: NSManagedObjectContext) -> CDFeedImage {
+		let result = CDFeedImage(context: context)
+		result.id = feedImage.id
+		result.imageDescription = feedImage.description
+		result.imageLocation = feedImage.location
+		result.url = feedImage.url
+		
+		return result
 	}
-}
-
-private extension LocalFeedImage {
-	init?(from cacheFeedImage: CDFeedImage?) {
+	
+	static func mapToFeed(_ cacheFeed: CDFeed) -> (feed: [LocalFeedImage], timestamp: Date) {
+		let feed = cacheFeed.feed.compactMap({ mapToFeedImage($0 as? CDFeedImage) })
+		return (feed, cacheFeed.timestamp)
+	}
+	
+	private static func mapToFeedImage(_ cacheFeedImage: CDFeedImage?) -> LocalFeedImage? {
 		guard let cacheFeedImage = cacheFeedImage else { return nil }
 		
-		self.init(
+		return LocalFeedImage(
 			id: cacheFeedImage.id,
 			description: cacheFeedImage.imageDescription,
 			location: cacheFeedImage.imageLocation,
