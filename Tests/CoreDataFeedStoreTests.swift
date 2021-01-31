@@ -67,7 +67,7 @@ class CoreDataFeedStore: FeedStore {
 	init() {
 		let model = NSManagedObjectModel(name: dataModelName, in: Bundle(for: CoreDataFeedStore.self))
 		persistentContainer = NSPersistentContainer(dataModelName: dataModelName, model: model, storeURL: devNullURL)
-		managedContext = persistentContainer.viewContext
+		managedContext = persistentContainer.newBackgroundContext()
 	}
 	
 	func deleteCachedFeed(completion: @escaping DeletionCompletion) {
