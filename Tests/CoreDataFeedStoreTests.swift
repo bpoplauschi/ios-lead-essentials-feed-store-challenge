@@ -30,10 +30,7 @@ class CoreDataFeedStore: FeedStore {
 	init() {
 		let modelURL = Bundle(for: CoreDataFeedStore.self).url(forResource: dataModelName, withExtension: "momd")!
 		let model = NSManagedObjectModel(contentsOf: modelURL)!
-		let description = NSPersistentStoreDescription(url: devNullURL)
-		persistentContainer = NSPersistentContainer(name: dataModelName, managedObjectModel: model)
-		persistentContainer.persistentStoreDescriptions = [description]
-		persistentContainer.loadPersistentStores { _, _ in }
+		persistentContainer = NSPersistentContainer(dataModelName: dataModelName, model: model, storeURL: devNullURL)
 		managedContext = persistentContainer.viewContext
 	}
 	
@@ -75,6 +72,15 @@ class CoreDataFeedStore: FeedStore {
 				return LocalFeedImage(id: $0.id, description: $0.imageDescription, location: $0.imageLocation, url: $0.url)
 			}, timestamp: cachedFeed.timestamp))
 		}
+	}
+}
+
+private extension NSPersistentContainer {
+	convenience init(dataModelName: String, model: NSManagedObjectModel, storeURL: URL) {
+		let description = NSPersistentStoreDescription(url: storeURL)
+		self.init(name: dataModelName, managedObjectModel: model)
+		persistentStoreDescriptions = [description]
+		loadPersistentStores { _, _ in }
 	}
 }
 
