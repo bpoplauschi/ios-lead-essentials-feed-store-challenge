@@ -62,11 +62,10 @@ class CoreDataFeedStore: FeedStore {
 	private let persistentContainer: NSPersistentContainer
 	private let managedContext: NSManagedObjectContext
 	private let dataModelName = "FeedDataModel"
-	private let devNullURL = URL(fileURLWithPath: "/dev/null")
 	
-	init() {
+	init(storeURL: URL, persistentStoreClass: NSPersistentStore.Type? = nil, persistentStoreType: String? = nil) {
 		let model = NSManagedObjectModel(name: dataModelName, in: Bundle(for: CoreDataFeedStore.self))
-		persistentContainer = NSPersistentContainer(dataModelName: dataModelName, model: model, storeURL: devNullURL)
+		persistentContainer = NSPersistentContainer(dataModelName: dataModelName, model: model, storeURL: storeURL, persistentStoreClass: persistentStoreClass, persistentStoreType: persistentStoreType)
 		managedContext = persistentContainer.newBackgroundContext()
 	}
 	
@@ -98,17 +97,21 @@ class CoreDataFeedStore: FeedStore {
 		let context = self.managedContext
 		
 		context.perform {
-			guard let cachedFeed = try! context.fetch(CDFeed.fetchRequest()).first as? CDFeed else {
-				completion(.empty)
-				return
-			}
-			
-			completion(
-				.found(
-					feed: cachedFeed.feed.compactMap({ LocalFeedImage(from: $0 as? CDFeedImage) }),
-					timestamp: cachedFeed.timestamp
+			do {
+				guard let cachedFeed = try context.fetch(CDFeed.fetchRequest()).first as? CDFeed else {
+					completion(.empty)
+					return
+				}
+				
+				completion(
+					.found(
+						feed: cachedFeed.feed.compactMap({ LocalFeedImage(from: $0 as? CDFeedImage) }),
+						timestamp: cachedFeed.timestamp
+					)
 				)
-			)
+			} catch {
+				completion(.failure(error))
+			}
 		}
 	}
 	
@@ -121,10 +124,21 @@ class CoreDataFeedStore: FeedStore {
 }
 
 private extension NSPersistentContainer {
-	convenience init(dataModelName: String, model: NSManagedObjectModel, storeURL: URL) {
+	convenience init(dataModelName: String, model: NSManagedObjectModel, storeURL: URL, persistentStoreClass: NSPersistentStore.Type? = nil, persistentStoreType: String? = nil) {
+		
 		let description = NSPersistentStoreDescription(url: storeURL)
 		self.init(name: dataModelName, managedObjectModel: model)
 		persistentStoreDescriptions = [description]
+		
+		if let persistentStoreClass = persistentStoreClass, let persistentStoreType = persistentStoreType {
+			NSPersistentStoreCoordinator.registerStoreClass(persistentStoreClass, forStoreType: persistentStoreType)
+			do {
+				try persistentStoreCoordinator.addPersistentStore(ofType: persistentStoreType, configurationName: nil, at: storeURL, options: nil)
+			} catch {
+				print(error)
+			}
+		}
+		
 		loadPersistentStores { _, _ in }
 	}
 }
@@ -212,35 +226,66 @@ class CoreDataFeedStoreTests: XCTestCase, FeedStoreSpecs {
 	
 	// - MARK: Helpers
 	
-	private func makeSUT() -> FeedStore {
-		return CoreDataFeedStore()
+	private func makeSUT(storeURL: URL? = nil, persistentStoreClass: NSPersistentStore.Type? = nil, persistentStoreType: String? = nil) -> FeedStore {
+		return CoreDataFeedStore(storeURL: storeURL ?? URL(fileURLWithPath: "/dev/null"), persistentStoreClass: persistentStoreClass, persistentStoreType: persistentStoreType)
 	}
-	
+		
+	private func cachesDirectory() -> URL {
+		FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
+	}
 }
 
-//  ***********************
-//
-//  Uncomment the following tests if your implementation has failable operations.
-//
-//  Otherwise, delete the commented out code!
-//
-//  ***********************
+extension CoreDataFeedStoreTests: FailableRetrieveFeedStoreSpecs {
 
-//extension CoreDataFeedStoreTests: FailableRetrieveFeedStoreSpecs {
+	func test_retrieve_deliversFailureOnRetrievalError() {
+		MockPersistentStore.mockExecuteError = anyNSError()
+		let sut = makeSUT(persistentStoreClass: MockPersistentStore.self, persistentStoreType: MockPersistentStore.storeType)
+
+		assertThatRetrieveDeliversFailureOnRetrievalError(on: sut)
+	}
+
+	func test_retrieve_hasNoSideEffectsOnFailure() {
+//		MockPersistentStore.mockExecuteError = anyNSError()
+//		let sut = makeSUT(persistentStoreClass: MockPersistentStore.self, persistentStoreType: MockPersistentStore.storeType)
 //
-//	func test_retrieve_deliversFailureOnRetrievalError() {
-////		let sut = makeSUT()
-////
-////		assertThatRetrieveDeliversFailureOnRetrievalError(on: sut)
-//	}
-//
-//	func test_retrieve_hasNoSideEffectsOnFailure() {
-////		let sut = makeSUT()
-////
-////		assertThatRetrieveHasNoSideEffectsOnFailure(on: sut)
-//	}
-//
-//}
+//		assertThatRetrieveHasNoSideEffectsOnFailure(on: sut)
+	}
+}
+
+class MockPersistentStore: NSIncrementalStore {
+	
+	static let storeType: String = "Tests.MockPersistentStore"
+	
+	static var mockExecuteError: Error?
+			
+	override func loadMetadata() throws {
+	}
+	
+	override class func metadataForPersistentStore(with url: URL) throws -> [String : Any] {
+		return [NSStoreTypeKey: MockPersistentStore.storeType, NSStoreUUIDKey: ""]
+	}
+					
+	override func execute(_ request: NSPersistentStoreRequest, with context: NSManagedObjectContext?) throws -> Any {
+		if let error = MockPersistentStore.mockExecuteError {
+			throw error
+		}
+		return [CDFeed]() as Any
+	}
+	
+	override func newValuesForObject(with objectID: NSManagedObjectID, with context: NSManagedObjectContext) throws -> NSIncrementalStoreNode {
+		if let error = MockPersistentStore.mockExecuteError {
+			throw error
+		}
+		return NSIncrementalStoreNode()
+	}
+	
+	override func obtainPermanentIDs(for array: [NSManagedObject]) throws -> [NSManagedObjectID] {
+		if let error = MockPersistentStore.mockExecuteError {
+			throw error
+		}
+		return []
+	}
+}
 
 //extension FeedStoreChallengeTests: FailableInsertFeedStoreSpecs {
 //
