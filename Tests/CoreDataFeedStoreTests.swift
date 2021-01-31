@@ -64,11 +64,17 @@ class CoreDataFeedStore: FeedStore {
 	private let persistentContainer: NSPersistentContainer
 	private let managedContext: NSManagedObjectContext
 	private let dataModelName = "FeedDataModel"
+	private let persistentStore: PersistentStore?
 	
 	init(storeURL: URL, persistentStore: PersistentStore? = nil) {
 		let model = NSManagedObjectModel(name: dataModelName, in: Bundle(for: CoreDataFeedStore.self))
+		self.persistentStore = persistentStore
 		persistentContainer = NSPersistentContainer(dataModelName: dataModelName, model: model, storeURL: storeURL, persistentStore: persistentStore)
 		managedContext = persistentContainer.newBackgroundContext()
+	}
+	
+	deinit {
+		persistentContainer.persistentStoreCoordinator.remove(persistentStore: persistentStore)
 	}
 	
 	func deleteCachedFeed(completion: @escaping DeletionCompletion) {
@@ -137,7 +143,9 @@ private extension NSPersistentContainer {
 		
 		try? persistentStoreCoordinator.add(persistentStore: persistentStore, with: storeURL)
 		
-		loadPersistentStores { _, _ in }
+		if persistentStoreCoordinator.persistentStores.isEmpty {
+			loadPersistentStores { _, _ in }
+		}
 	}
 }
 
@@ -153,6 +161,14 @@ private extension NSPersistentStoreCoordinator {
 		} catch {
 			throw error
 		}
+	}
+	
+	func remove(persistentStore: CoreDataFeedStore.PersistentStore?) {
+		guard let persistentStore = persistentStore else {
+			return
+		}
+		
+		NSPersistentStoreCoordinator.registerStoreClass(nil, forStoreType: persistentStore.type)
 	}
 }
 
@@ -242,35 +258,50 @@ class CoreDataFeedStoreTests: XCTestCase, FeedStoreSpecs {
 	private func makeSUT(storeURL: URL? = nil, persistentStore: CoreDataFeedStore.PersistentStore? = nil) -> FeedStore {
 		return CoreDataFeedStore(storeURL: storeURL ?? URL(fileURLWithPath: "/dev/null"), persistentStore: persistentStore)
 	}
-		
-	private func cachesDirectory() -> URL {
-		FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
-	}
 }
 
 extension CoreDataFeedStoreTests: FailableRetrieveFeedStoreSpecs {
 
 	func test_retrieve_deliversFailureOnRetrievalError() {
-		MockPersistentStore.mockExecuteError = anyNSError()
+		MockPersistentStore.mockRetrieveError = anyNSError()
 		let sut = makeSUT(persistentStore: (MockPersistentStore.self, MockPersistentStore.storeType))
 
 		assertThatRetrieveDeliversFailureOnRetrievalError(on: sut)
+
+		MockPersistentStore.mockRetrieveError = nil
 	}
 
 	func test_retrieve_hasNoSideEffectsOnFailure() {
-		MockPersistentStore.mockExecuteError = anyNSError()
+		MockPersistentStore.mockRetrieveError = anyNSError()
 		let sut = makeSUT(persistentStore: (MockPersistentStore.self, MockPersistentStore.storeType))
 
 		assertThatRetrieveHasNoSideEffectsOnFailure(on: sut)
+
+		MockPersistentStore.mockRetrieveError = nil
 	}
 }
 
+// Note: this class is not private because if we make it private, the storeType will become an obfuscated random string
+// e.g. `_TtC5TestsP33_01BF4B5342A9D90D45026E2FA8052BD719MockPersistentStore`
+// and unless we hardcode that, we will get a CoreData error when adding the store
+// NSCocoaErrorDomain(134010) with userInfo dictionary {
+// metadata =     {
+// ...
+// NSStoreType = "_TtC5TestsP33_01BF4B5342A9D90D45026E2FA8052BD719MockPersistentStore";
+// ... };
+// reason = "The store type in the metadata does not match the specified store type.";
 class MockPersistentStore: NSIncrementalStore {
 	
 	static let storeType: String = "Tests.MockPersistentStore"
 	
-	static var mockExecuteError: Error?
-			
+	static var mockRetrieveError: Error?
+	static var mockInsertError: Error?
+	
+	static func resetAllMockedValues() {
+		mockRetrieveError = nil
+		mockInsertError = nil
+	}
+		
 	override func loadMetadata() throws {
 	}
 	
@@ -279,40 +310,47 @@ class MockPersistentStore: NSIncrementalStore {
 	}
 					
 	override func execute(_ request: NSPersistentStoreRequest, with context: NSManagedObjectContext?) throws -> Any {
-		if let error = MockPersistentStore.mockExecuteError {
-			throw error
+		switch (request, MockPersistentStore.mockRetrieveError, MockPersistentStore.mockInsertError) {
+		case let (_ as NSFetchRequest<NSFetchRequestResult>, .some(retrievalError), _):
+			throw retrievalError
+		case let (_ as NSSaveChangesRequest, _, .some(insertionError)):
+			throw insertionError
+		default: break
 		}
-		return [CDFeed]() as Any
-	}
-	
-	override func newValuesForObject(with objectID: NSManagedObjectID, with context: NSManagedObjectContext) throws -> NSIncrementalStoreNode {
-		if let error = MockPersistentStore.mockExecuteError {
-			throw error
-		}
-		return NSIncrementalStoreNode()
+				
+		return []
 	}
 	
 	override func obtainPermanentIDs(for array: [NSManagedObject]) throws -> [NSManagedObjectID] {
-		if let error = MockPersistentStore.mockExecuteError {
-			throw error
-		}
-		return []
+		/** HACK
+		 * throwing an exception in `execute(request:with:)` during a save has some backing mechanism that stores the inserted data in another store
+		 * (even though the coordinator has only this `MockPersistentStore`)
+		 * this makes our "after insert throws insertion error, retrieve should deliver empty" scenario fail
+		 * as the store will somehow complete with the Feed
+		 
+		 * the only way to go around that is to use override the object ids so the main `CDFeed` object ID is owerwritten by a `CDFeedImage` ID
+		 */
+		guard let firstID = array.first?.objectID else { return [] }
+		return array.map { _ in firstID }
 	}
 }
 
 extension CoreDataFeedStoreTests: FailableInsertFeedStoreSpecs {
 
 	func test_insert_deliversErrorOnInsertionError() {
-		MockPersistentStore.mockExecuteError = anyNSError()
+		MockPersistentStore.mockInsertError = anyNSError()
 		let sut = makeSUT(persistentStore: (MockPersistentStore.self, MockPersistentStore.storeType))
 
 		assertThatInsertDeliversErrorOnInsertionError(on: sut)
+		MockPersistentStore.mockInsertError = nil
 	}
 
 	func test_insert_hasNoSideEffectsOnInsertionError() {
-//		let sut = makeSUT()
-//
-//		assertThatInsertHasNoSideEffectsOnInsertionError(on: sut)
+		MockPersistentStore.mockInsertError = anyNSError()
+		let sut = makeSUT(persistentStore: (MockPersistentStore.self, MockPersistentStore.storeType))
+
+		assertThatInsertHasNoSideEffectsOnInsertionError(on: sut)
+		MockPersistentStore.mockInsertError = nil
 	}
 
 }
