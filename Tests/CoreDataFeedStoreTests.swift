@@ -15,6 +15,16 @@ class CDFeedImage: NSManagedObject {
 	@NSManaged var feed: CDFeed
 }
 
+extension CDFeedImage {
+	func populate(from feedImage: LocalFeedImage) -> CDFeedImage {
+		id = feedImage.id
+		imageDescription = feedImage.description
+		imageLocation = feedImage.location
+		url = feedImage.url
+		return self
+	}
+}
+
 class CDFeed: NSManagedObject {
 	@NSManaged var timestamp: Date
 	@NSManaged var feed: NSOrderedSet
@@ -42,14 +52,7 @@ class CoreDataFeedStore: FeedStore {
 		
 		context.perform {
 			let cachedFeed = CDFeed(context: context)
-			cachedFeed.feed = NSOrderedSet(array: feed.map { feedImage in
-				let cachedFeedImage = CDFeedImage(context: context)
-				cachedFeedImage.id = feedImage.id
-				cachedFeedImage.imageDescription = feedImage.description
-				cachedFeedImage.imageLocation = feedImage.location
-				cachedFeedImage.url = feedImage.url
-				return cachedFeedImage
-			})
+			cachedFeed.feed = NSOrderedSet(array: feed.map { CDFeedImage(context: context).populate(from: $0) })
 			cachedFeed.timestamp = timestamp
 			
 			try! context.save()
