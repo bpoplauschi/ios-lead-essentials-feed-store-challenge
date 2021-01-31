@@ -110,12 +110,4 @@ class CoreDataFeedStoreTests: XCTestCase, FeedStoreSpecs {
 	private func deleteStoreArtifacts() {
 		try? FileManager.default.removeItem(at: testSpecificStoreURL())
 	}
-	
-	private func testSpecificStoreURL() -> URL {
-		cachesDirectory().appendingPathComponent("\(type(of: self)).store")
-	}
-	
-	private func cachesDirectory() -> URL {
-		FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
-	}
 }
