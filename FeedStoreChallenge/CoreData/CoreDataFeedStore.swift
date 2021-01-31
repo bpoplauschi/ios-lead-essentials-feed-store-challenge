@@ -16,14 +16,13 @@ public final class CoreDataFeedStore: FeedStore {
 	
 	private let persistentContainer: NSPersistentContainer
 	private let managedContext: NSManagedObjectContext
-	private let devNullURL = URL(fileURLWithPath: "/dev/null")
 	
 	// MARK: - Init
 	
-	public init() {
+	public init(storeURL: URL) {
 		
 		let model = NSManagedObjectModel(name: CoreDataFeedStore.dataModelName, in: Bundle(for: CoreDataFeedStore.self))
-		persistentContainer = NSPersistentContainer(dataModelName: CoreDataFeedStore.dataModelName, model: model, storeURL: devNullURL)
+		persistentContainer = NSPersistentContainer(dataModelName: CoreDataFeedStore.dataModelName, model: model, storeURL: storeURL)
 		managedContext = persistentContainer.newBackgroundContext()
 	}
 	

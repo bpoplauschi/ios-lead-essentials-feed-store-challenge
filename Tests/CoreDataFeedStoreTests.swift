@@ -7,6 +7,18 @@ import FeedStoreChallenge
 
 class CoreDataFeedStoreTests: XCTestCase, FeedStoreSpecs {
 	
+	override func setUp() {
+		super.setUp()
+
+		setupEmptyStoreState()
+	}
+	
+	override func tearDown() {
+		super.tearDown()
+		
+		undoStoreSideEffects()
+	}
+	
 	func test_retrieve_deliversEmptyOnEmptyCache() {
 		let sut = makeSUT()
 
@@ -81,8 +93,27 @@ class CoreDataFeedStoreTests: XCTestCase, FeedStoreSpecs {
 	
 	// - MARK: Helpers
 	
-	private func makeSUT() -> FeedStore {
-		return CoreDataFeedStore()
+	private func makeSUT(storeURL: URL? = nil) -> FeedStore {
+		return CoreDataFeedStore(storeURL: storeURL ?? testSpecificStoreURL())
 	}
 	
+	private func setupEmptyStoreState() {
+		deleteStoreArtifacts()
+	}
+
+	private func undoStoreSideEffects() {
+		deleteStoreArtifacts()
+	}
+
+	private func deleteStoreArtifacts() {
+		try? FileManager.default.removeItem(at: testSpecificStoreURL())
+	}
+	
+	private func testSpecificStoreURL() -> URL {
+		cachesDirectory().appendingPathComponent("\(type(of: self)).store")
+	}
+	
+	private func cachesDirectory() -> URL {
+		FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
+	}
 }
