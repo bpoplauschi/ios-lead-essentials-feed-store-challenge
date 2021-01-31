@@ -49,3 +49,7 @@ Your custom persistence infrastructure implementation can be backed by any persi
 9) Aim **not** to block the main thread - run expensive operations in a background queue.
 
 Happy coding!
+
+## Class Diagram
+
+![](classDiagram.png)
