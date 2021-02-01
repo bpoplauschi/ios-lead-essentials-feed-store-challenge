@@ -6,18 +6,6 @@ import XCTest
 import FeedStoreChallenge
 
 class CoreDataFeedStoreIntegrationTests: XCTestCase {
-		
-	override func setUp() {
-		super.setUp()
-		
-		setupEmptyStoreState()
-	}
-	
-	override func tearDown() {
-		super.tearDown()
-		
-		undoStoreSideEffects()
-	}
 	
 	func test_retrieve_deliversEmptyOnEmptyCache() {
 		let sut = makeSUT()
@@ -65,20 +53,8 @@ class CoreDataFeedStoreIntegrationTests: XCTestCase {
 	// - MARK: Helpers
 	
 	private func makeSUT() -> FeedStore {
-		let sut = try! CoreDataFeedStore(storeURL: testSpecificStoreURL())
+		let sut = try! CoreDataFeedStore(storeURL: URL(fileURLWithPath: "/dev/null").appendingPathComponent("shared"))
 		trackForMemoryLeaks(sut)
 		return sut
-	}
-	
-	private func setupEmptyStoreState() {
-		deleteStoreArtifacts()
-	}
-
-	private func undoStoreSideEffects() {
-		deleteStoreArtifacts()
-	}
-
-	private func deleteStoreArtifacts() {
-		try? FileManager.default.removeItem(at: testSpecificStoreURL())
 	}
 }

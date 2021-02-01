@@ -6,22 +6,10 @@ import XCTest
 import FeedStoreChallenge
 
 class CoreDataFeedStoreTests: XCTestCase, FeedStoreSpecs {
-	
-	override func setUp() {
-		super.setUp()
-
-		setupEmptyStoreState()
-	}
-	
-	override func tearDown() {
-		super.tearDown()
 		
-		undoStoreSideEffects()
-	}
-	
 	func test_init_throwsErrorWhenManagedObjectModelCannotBeCreated() {
 		do {
-			let _ = try CoreDataFeedStore(storeURL: testSpecificStoreURL(), modelName: "WrongModelName")
+			let _ = try CoreDataFeedStore(storeURL: URL(fileURLWithPath: "/dev/null"), modelName: "WrongModelName")
 		} catch {
 			XCTAssertEqual(
 				error as NSError,
@@ -107,21 +95,9 @@ class CoreDataFeedStoreTests: XCTestCase, FeedStoreSpecs {
 	
 	// - MARK: Helpers
 	
-	private func makeSUT(storeURL: URL? = nil) -> FeedStore {
-		let sut = try! CoreDataFeedStore(storeURL: storeURL ?? testSpecificStoreURL())
+	private func makeSUT() -> FeedStore {
+		let sut = try! CoreDataFeedStore(storeURL: URL(fileURLWithPath: "/dev/null"))
 		trackForMemoryLeaks(sut)
 		return sut
-	}
-	
-	private func setupEmptyStoreState() {
-		deleteStoreArtifacts()
-	}
-
-	private func undoStoreSideEffects() {
-		deleteStoreArtifacts()
-	}
-
-	private func deleteStoreArtifacts() {
-		try? FileManager.default.removeItem(at: testSpecificStoreURL())
 	}
 }
