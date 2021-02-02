@@ -6,20 +6,6 @@ import XCTest
 import FeedStoreChallenge
 
 class CoreDataFeedStoreTests: XCTestCase, FeedStoreSpecs {
-		
-	func test_init_throwsErrorWhenManagedObjectModelCannotBeCreated() {
-		do {
-			let _ = try CoreDataFeedStore(storeURL: URL(fileURLWithPath: "/dev/null"), modelName: "WrongModelName")
-		} catch {
-			XCTAssertEqual(
-				error as NSError,
-				CoreDataFeedStore.CoreDataFeedStoreError.cannotCreateManagedObjectModel(
-					name: "WrongModelName",
-					bundle: Bundle(for: CoreDataFeedStore.self)
-				) as NSError
-			)
-		}
-	}
 	
 	func test_retrieve_deliversEmptyOnEmptyCache() {
 		let sut = makeSUT()

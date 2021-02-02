@@ -23,9 +23,9 @@ public final class CoreDataFeedStore: FeedStore {
 	
 	// MARK: - Init
 	
-	public init(storeURL: URL, modelName: String? = nil) throws {
+	public init(storeURL: URL) throws {
 		let bundle = Bundle(for: CoreDataFeedStore.self)
-		let dataModelName = modelName ?? "FeedDataModel"
+		let dataModelName = "FeedDataModel"
 		guard let model = NSManagedObjectModel(name: dataModelName, in: bundle) else {
 			throw CoreDataFeedStoreError.cannotCreateManagedObjectModel(name: dataModelName, bundle: bundle)
 		}
