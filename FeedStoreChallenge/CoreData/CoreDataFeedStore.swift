@@ -54,7 +54,7 @@ public final class CoreDataFeedStore: FeedStore {
 		context.perform {
 			do {
 				try self.deleteCache()
-				let _ = CoreDataFeedMapper.mapToStorableFeed(feed: feed, timestamp: timestamp, in: context)
+				CoreDataFeedHelper.insert(feed: feed, timestamp: timestamp, in: context)
 				try context.save()
 				completion(nil)
 			} catch {
@@ -72,7 +72,7 @@ public final class CoreDataFeedStore: FeedStore {
 					completion(.empty)
 					return
 				}
-				let (feed, timestamp) = CoreDataFeedMapper.mapToFeed(cachedFeed)
+				let (feed, timestamp) = CoreDataFeedHelper.mapToFeed(cachedFeed)
 				completion(.found(feed: feed, timestamp: timestamp))
 			} catch {
 				completion(.failure(error))

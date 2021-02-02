@@ -1,5 +1,5 @@
 //
-//  CoreDataFeedMapper.swift
+//  CoreDataFeedHelper.swift
 //  FeedStoreChallenge
 //
 //  Created by Bogdan P on 31/01/2021.
@@ -9,13 +9,11 @@
 import Foundation
 import CoreData
 
-internal final class CoreDataFeedMapper {
-	internal static func mapToStorableFeed(feed: [LocalFeedImage], timestamp: Date, in context: NSManagedObjectContext) -> CDFeed {
+internal final class CoreDataFeedHelper {
+	internal static func insert(feed: [LocalFeedImage], timestamp: Date, in context: NSManagedObjectContext) {
 		let result = CDFeed(context: context)
 		result.feed = NSOrderedSet(array: feed.map { mapToStorableFeedImage($0, in: context) })
 		result.timestamp = timestamp
-		
-		return result
 	}
 	
 	internal static func mapToFeed(_ cacheFeed: CDFeed) -> (feed: [LocalFeedImage], timestamp: Date) {
