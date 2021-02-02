@@ -32,11 +32,9 @@ public final class CoreDataFeedStore: FeedStore {
 	// MARK: - FeedStore
 	
 	public func deleteCachedFeed(completion: @escaping DeletionCompletion) {
-		let context = self.managedContext
-		
-		context.perform {
+		perform { context in
 			do {
-				try self.deleteCache()
+				try self.deleteCache(in: context)
 				completion(nil)
 			} catch {
 				completion(error)
@@ -45,11 +43,9 @@ public final class CoreDataFeedStore: FeedStore {
 	}
 	
 	public func insert(_ feed: [LocalFeedImage], timestamp: Date, completion: @escaping InsertionCompletion) {
-		let context = self.managedContext
-		
-		context.perform {
+		perform { context in
 			do {
-				try self.deleteCache()
+				try self.deleteCache(in: context)
 				CoreDataFeedHelper.insert(feed: feed, timestamp: timestamp, in: context)
 				try context.save()
 				completion(nil)
@@ -60,9 +56,7 @@ public final class CoreDataFeedStore: FeedStore {
 	}
 	
 	public func retrieve(completion: @escaping RetrievalCompletion) {
-		let context = self.managedContext
-		
-		context.perform {
+		perform { context in
 			do {
 				guard let cachedFeed = try context.fetch(CDFeed.fetchRequest()).first as? CDFeed else {
 					completion(.empty)
@@ -78,11 +72,16 @@ public final class CoreDataFeedStore: FeedStore {
 	
 	// MARK: - Helpers
 	
-	private func deleteCache() throws {
-		if let feedCache = try managedContext.fetch(CDFeed.fetchRequest()).first as? CDFeed {
-			managedContext.delete(feedCache)
-			try managedContext.save()
+	private func deleteCache(in context: NSManagedObjectContext) throws {
+		if let feedCache = try context.fetch(CDFeed.fetchRequest()).first as? CDFeed {
+			context.delete(feedCache)
+			try context.save()
 		}
+	}
+	
+	private func perform(_ action: @escaping (NSManagedObjectContext) -> Void) {
+		let context = self.managedContext
+		context.perform { action(context) }
 	}
 }
 
