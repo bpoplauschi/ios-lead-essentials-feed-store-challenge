@@ -10,12 +10,6 @@ import CoreData
 
 public final class CoreDataFeedStore: FeedStore {
 	
-	// MARK: - Types
-	
-	public enum CoreDataFeedStoreError: Error {
-		case cannotCreateManagedObjectModel(name: String, bundle: Bundle)
-	}
-	
 	// MARK: - Properties
 	
 	private let persistentContainer: NSPersistentContainer
